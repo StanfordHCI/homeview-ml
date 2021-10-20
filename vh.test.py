@@ -66,7 +66,7 @@ model.eval()
 
 ### Step 4: evaluation
 
-eval_id = int(sys.argv[2])
+eval_id = int(sys.argv[2]) - 100
 sensors = eval_data[eval_id][0]
 
 predicts = model(sensors).detach().numpy()
