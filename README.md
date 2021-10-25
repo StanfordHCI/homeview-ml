@@ -22,5 +22,5 @@ python train.py [name]
 Specify the frame id [eval_id] for evaluation.
 
 ```bash
-python vh.test.py [name] [eval_id]
+python test.py [name] [eval_id]
 ```

@@ -1,3 +1,4 @@
+import config
 import torch
 import sys
 
@@ -9,26 +10,20 @@ device = torch.device('cpu')
 def collate(datas):
   return [torch.stack(list(tup), 0) for tup in zip(*datas)]
 
-dataset = 'vh.' + sys.argv[1]
-batch_size = 4
+dataset_name = 'vh.' + sys.argv[1]
 n_threads = 0
-train_data = torch.load(dataset + '.train.pth')
-# for i in range(len(train_data)):
-#   train_data[i] = (train_data[i][0], train_data[i][1][0:30])
 
+train_data = torch.load(dataset_name + '/train.pth')
 train_loader = torch.utils.data.DataLoader(train_data,
-                                           batch_size = batch_size,
+                                           batch_size = config.batch_size,
                                            num_workers = n_threads,
                                            collate_fn = collate,
                                            shuffle = True,
                                            pin_memory = True)
 
-eval_data = torch.load(dataset + '.eval.pth')
-# for i in range(len(eval_data)):
-#   eval_data[i] = (eval_data[i][0], eval_data[i][1][0:30])
-
+eval_data = torch.load(dataset_name + '/eval.pth')
 eval_loader = torch.utils.data.DataLoader(eval_data,
-                                          batch_size = batch_size,
+                                          batch_size = config.batch_size,
                                           num_workers = n_threads,
                                           collate_fn = collate,
                                           shuffle = False,
@@ -65,7 +60,7 @@ def init_weights(m):
 
 resume = 0
 if resume:
-  ckpt = torch.load(dataset + '.pth')
+  ckpt = torch.load(dataset_name + '/.pth')
   model.load_state_dict(ckpt)
 else:
   # pass
@@ -80,11 +75,8 @@ def compute_loss(pred, gt):
   return loss
 
 
-lr = 0.1
-optimizer = torch.optim.SGD(model.parameters(), lr = lr)
-
-epochs = 2048
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, 0.0001)
+optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
 
@@ -124,9 +116,9 @@ def eval():
 
 
 if __name__ == '__main__':
-  for epoch in range(1, epochs + 1):
+  for epoch in range(1, config.epochs + 1):
     train()
-    if epoch % 4 == 0:
+    if epoch % config.eval_freq == 0:
       eval()
-      if epoch % 64 == 0:
-        torch.save(model.state_dict(), dataset + '.pth')
+      if epoch % config.save_freq == 0:
+        torch.save(model.state_dict(), dataset_name + '/.pth')
