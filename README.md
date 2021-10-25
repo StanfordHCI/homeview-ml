@@ -1,14 +1,13 @@
 ### Dataset Preparation
 
-Step 1. Rename the Virtual-Home output directory to 'vh.[name]', for example: 'vh.door'
-Make sure the directory contains 100+ frames of frame_id-camera_id-point_cloud.exr, frame_id.json, and frame_id-camera_id-rgb.png.
+Step 1. Place the generated file in directory `vh.[name]/raw/`. Make sure the frame count exceeds `[n_train]` set in config.py. Each frame should contain one frame_id.json and `[n_cameras]` of frame_id-camera_id-point_cloud.exr and `[n_cameras]` of frame_id-camera_id-rgb.png.
 
-Step 2. Convert to dataset. The first 100 frames are used for training and the rest for evaluation.
+Step 2. Convert to dataset. The first `[n_train]` frames are used for training and the rest for evaluation.
 
 ```bash
 python vh.py [name]
 ```
-This generates vh.[name].train.pth and vh.[name].eval.pth.
+train.pth and eval.pth will be generated and saved in `vh.[name]/`.
 
 
 ### Train
@@ -19,7 +18,7 @@ python train.py [name]
 
 ### Test
 
-Specify the frame id [eval_id] for evaluation.
+Specify the frame id `[eval_id]` for evaluation.
 
 ```bash
 python test.py [name] [eval_id]
