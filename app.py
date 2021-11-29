@@ -49,10 +49,9 @@ if not os.path.exists(save_directory):
   os.makedirs(save_directory)
 
 while True:
-  # sensors = socket.recv()
-  # # TODO: convert string/json to integer list [0, 1, 0, ..., 1]
-  # sensors = torch.Tensor(sensors)
-  sensors = train_data[np.random.randint(100)][0]
+  sensors = socket.recv()
+  # TODO: convert string/json to integer list [0, 1, 0, ..., 1]
+  sensors = torch.Tensor(sensors)
 
   pred_frame_ids = get_frame_ids(sensors)
   
@@ -69,4 +68,4 @@ while True:
       open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id), chunk_cloud)
 
   prev_frame_ids = pred_frame_ids
-  # socket.send_string(json.dumps(prev_frame_ids))
+  socket.send_string(json.dumps(prev_frame_ids))
