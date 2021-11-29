@@ -23,3 +23,27 @@ Specify the frame id `[eval_id]` for evaluation.
 ```bash
 python test.py [name] [eval_id]
 ```
+
+### Demo-Backend
+
+#### 1. install requirements
+
+```bash
+pip install flask flask-compress
+```
+
+#### 2. prepare chunks
+
+prepare locally
+
+```bash
+python localize.py [name]
+```
+
+or download the chunks [here](https://drive.google.com/file/d/1JvMEulAknZuQVcUlbhd0XsEzAod1uodK/view?usp=sharing), then extract it to `vh.[name]/chunks`.
+
+#### 3. run backend
+
+```bash
+python app.py [name]
+```

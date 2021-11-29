@@ -68,3 +68,9 @@ def get_coords_and_colors(coord_files, color_files):
   ]).reshape(-1, 3)
 
   return coords, colors
+
+
+def merge_clouds(clouds):
+  coords = np.concatenate([np.asarray(cloud.points) for cloud in clouds])
+  colors = np.concatenate([np.asarray(cloud.colors) for cloud in clouds])
+  return get_cloud(coords, colors * 255.)

@@ -5,33 +5,7 @@ import sys
 device = torch.device('cpu')
 
 
-### Part 1: read data
-
-def collate(datas):
-  return [torch.stack(list(tup), 0) for tup in zip(*datas)]
-
-dataset_name = 'vh.' + sys.argv[1]
-n_threads = 0
-
-train_data = torch.load(dataset_name + '/train.pth')
-train_loader = torch.utils.data.DataLoader(train_data,
-                                           batch_size = config.batch_size,
-                                           num_workers = n_threads,
-                                           collate_fn = collate,
-                                           shuffle = True,
-                                           pin_memory = True)
-
-eval_data = torch.load(dataset_name + '/eval.pth')
-eval_loader = torch.utils.data.DataLoader(eval_data,
-                                          batch_size = config.batch_size,
-                                          num_workers = n_threads,
-                                          collate_fn = collate,
-                                          shuffle = False,
-                                          pin_memory = True)
-
-
-
-### Part 2: define, init model
+### Part 1: define model
 
 class Model(torch.nn.Module):
   def __init__(self, sensors, chunks):
@@ -44,13 +18,9 @@ class Model(torch.nn.Module):
     output = self.linear(input)
     return output
 
-n_sensors = train_data[0][0].shape[0]
-n_chunks = train_data[0][1].shape[0]
-# n_sensors = 1
-# n_chunks = 1
 
-model = Model(n_sensors, n_chunks)
-model.to(device)
+def collate(datas):
+  return [torch.stack(list(tup), 0) for tup in zip(*datas)]
 
 
 def init_weights(m):
@@ -58,27 +28,12 @@ def init_weights(m):
     torch.nn.init.uniform_(m.weight)
     torch.nn.init.uniform_(m.bias)
 
-resume = 0
-if resume:
-  ckpt = torch.load(dataset_name + '/.pth')
-  model.load_state_dict(ckpt)
-else:
-  # pass
-  model.apply(init_weights)
-
-
 
 ### Part 3: loss and hyperparams
 
 def compute_loss(pred, gt):
   loss = torch.nn.L1Loss(reduction = 'mean')(pred, gt)
   return loss
-
-
-optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
-# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-
 
 
 ### Part 4: training and evaluation
@@ -116,6 +71,50 @@ def eval():
 
 
 if __name__ == '__main__':
+
+  ### Part 2: read data
+
+  dataset_name = 'vh.' + sys.argv[1]
+  n_threads = 0
+
+  train_data = torch.load(dataset_name + '/train.pth')
+  train_loader = torch.utils.data.DataLoader(train_data,
+                                            batch_size = config.batch_size,
+                                            num_workers = n_threads,
+                                            collate_fn = collate,
+                                            shuffle = True,
+                                            pin_memory = True)
+
+  eval_data = torch.load(dataset_name + '/eval.pth')
+  eval_loader = torch.utils.data.DataLoader(eval_data,
+                                            batch_size = config.batch_size,
+                                            num_workers = n_threads,
+                                            collate_fn = collate,
+                                            shuffle = False,
+                                            pin_memory = True)
+
+  n_sensors = train_data[0][0].shape[0]
+  n_chunks = train_data[0][1].shape[0]
+  # n_sensors = 1
+  # n_chunks = 1
+
+  model = Model(n_sensors, n_chunks)
+  model.to(device)
+
+  resume = 0
+  if resume:
+    ckpt = torch.load(dataset_name + '/.pth')
+    model.load_state_dict(ckpt)
+  else:
+    # pass
+    model.apply(init_weights)
+
+  
+  optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
+  scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
+  # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
+
+
   for epoch in range(1, config.epochs + 1):
     train()
     if epoch % config.eval_freq == 0:

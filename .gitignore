@@ -1,5 +1,7 @@
 __pycache__
-*.pth
 syn/
 vh.*/
-debug.py
+*.pth
+*.ply
+*.zip
+debug*.py
