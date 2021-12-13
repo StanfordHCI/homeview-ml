@@ -59,8 +59,10 @@ while True:
   for file in files:
     os.remove(file)
 
+  update_chunk_ids = []
   for chunk_id, (prev_frame_id, pred_frame_id) in enumerate(zip(prev_frame_ids, pred_frame_ids)):
     if pred_frame_id != prev_frame_id:
+      update_chunk_ids.append(chunk_id)
       chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (pred_frame_id, chunk_id))['arr_0']
       chunk_cloud = open3d.geometry.PointCloud()
       chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
@@ -68,4 +70,4 @@ while True:
       open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id), chunk_cloud)
 
   prev_frame_ids = pred_frame_ids
-  socket.send_string(json.dumps(prev_frame_ids))
+  socket.send_string(json.dumps(update_chunk_ids))
