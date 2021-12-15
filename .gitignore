@@ -6,3 +6,4 @@ vh.*/
 *.ply
 *.zip
 debug*.py
+make_dataset.py
