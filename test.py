@@ -34,7 +34,8 @@ train_data = torch.load(dataset_name + '/train.pth')
 eval_data = torch.load(dataset_name + '/eval.pth')
 
 # (n_chunks, n_frames) distances
-vecs = np.array([data[1].tolist() for data in train_data]).transpose()
+vecs = np.array([data[1].tolist() for data in train_data])
+vecs = vecs.reshape(vecs.shape[0], -1, config.vector_dims).transpose(1, 0, 2)
 
 # bounding boxes
 coords, _ = get_coords_and_colors(coord_files[:config.n_cameras], coord_files[:config.n_cameras])
@@ -48,15 +49,15 @@ chunks = get_chunks(coords, config.chunk_size)
 #     color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
 #   )
 #   frame_clouds.append(get_cloud(coords, colors))
-  # frame_clouds[frame_id] = get_cloud(coords, colors)
+# frame_clouds[frame_id] = get_cloud(coords, colors)
 
 
 
 ### Step 3: setup model
 
 n_sensors = train_data[0][0].shape[0]
-n_chunks = train_data[0][1].shape[0]
-model = Model(n_sensors, n_chunks)
+n_chunks = train_data[0][1].shape[0] // config.vector_dims
+model = Model(n_sensors, n_chunks, config.vector_dims)
 
 ckpt = torch.load(dataset_name + '/.pth')
 model.load_state_dict(ckpt)
@@ -67,9 +68,12 @@ model.eval()
 
 test_id = int(sys.argv[2])
 sensors = eval_data[test_id - config.n_train][0] \
-  if test_id > config.n_train else train_data[test_id][0]
+  if test_id >= config.n_train else train_data[test_id][0]
+sensors[[2]] = 0
+pred_vecs = model(sensors).detach().numpy().reshape(-1, config.vector_dims)
 
-pred_vecs = model(sensors).detach().numpy()
+gt_vecs = eval_data[test_id - config.n_train][1] \
+  if test_id >= config.n_train else train_data[test_id][1]
 
 
 ### Step 5: assemble, visualize
@@ -84,28 +88,28 @@ assemble_time = 0.0
 
 for chunk_id, (vec, pred_vec, chunk) in enumerate(zip(vecs, pred_vecs, chunks)):
   # find closest distance (most matching frame) from database
-  frame_id = np.argmin(abs(vec - pred_vec))
-  print(frame_id)
+  frame_id = np.argmin(np.linalg.norm(vec - pred_vec, axis = 1))
+  if chunk_id == 2:
+    print(vec, pred_vec, gt_vecs[chunk_id * 2:chunk_id * 2 + 2], frame_id, vec[frame_id])
 
-  if frame_id not in frame_clouds:
-    coords, colors = get_coords_and_colors(
-      coord_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras],
-      color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
-    )
-    frame_clouds[frame_id] = get_cloud(coords, colors)
-  
+  # if frame_id not in frame_clouds:
+  #   coords, colors = get_coords_and_colors(
+  #     coord_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras],
+  #     color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
+  #   )
+  #   frame_clouds[frame_id] = get_cloud(coords, colors)
+
   start = time.time()
-  
-  chunk_cloud = frame_clouds[frame_id].crop(chunk)
-  chunk_clouds.append(chunk_cloud)
-  
-  assemble_time += time.time() - start
 
-  # DEBUG
-  # if chunk_id == 51:
-  #   print(pred_vec, frame_id)
-  #   print(vec)
-  #   open3d.visualization.draw_geometries([chunk_clouds[frame_id].crop(chunk)])
+  chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (frame_id, chunk_id))['arr_0']
+  chunk_cloud = open3d.geometry.PointCloud()
+  chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
+  chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
+
+  # chunk_cloud = frame_clouds[frame_id].crop(chunk)
+  chunk_clouds.append(chunk_cloud)
+
+  assemble_time += time.time() - start
 
 assemble_end = time.time()
 print(assemble_end - assemble_start, assemble_time)
@@ -128,10 +132,7 @@ no_ceiling = open3d.geometry.AxisAlignedBoundingBox(
 ground_truth = ground_truth.crop(no_ceiling)
 chunk_clouds = [cloud.crop(no_ceiling) for cloud in chunk_clouds]
 
-open3d.visualization.draw_geometries([ground_truth])
+# open3d.visualization.draw_geometries([ground_truth])
 
 chunk_clouds = merge_clouds(chunk_clouds)
 open3d.visualization.draw_geometries([chunk_clouds])
-
-
-open3d.io.write_point_cloud('01.cameras.ply', chunk_clouds)

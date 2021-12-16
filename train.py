@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
   print(train_data[0][1].shape, train_data[1][1].shape)
   n_sensors = train_data[0][0].shape[0]
-  n_chunks = train_data[0][1].shape[0] / config.vector_dims
+  n_chunks = train_data[0][1].shape[0] // config.vector_dims
   # n_sensors = 1
   # n_chunks = 1
 
