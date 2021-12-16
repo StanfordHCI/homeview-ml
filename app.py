@@ -45,7 +45,7 @@ def process_request(recv_sensors, old_frame_ids):
     :param old_frame_ids:
     :return:
     """
-    print("recv_sensors" + recv_sensors)
+    # print("recv_sensors" + str(recv_sensors))
     # zhuoyue: these are the indices of all the lights, kind of hacky
     light_sensors_idx = [1, 2, 4, 6, 7]
     door_sensors_idx = [0, 3, 5, 8, 9]
@@ -54,13 +54,15 @@ def process_request(recv_sensors, old_frame_ids):
         sensors[together_sensors_idx[i] - 1] = recv_sensors[i]
     new_frame_ids = get_frame_ids(sensors)
 
+    update_chunk_ids = []
     for chunk_id, (old_frame_id, new_frame_id) in enumerate(zip(old_frame_ids, new_frame_ids)):
         if new_frame_id != old_frame_id:
-            print("checking the chunk_id")
+            print("Writing Chunk")
             print(chunk_id)
-            # my_write_point_cloud(new_frame_id, chunk_id)
+            update_chunk_ids.append(chunk_id)
+            my_write_point_cloud(new_frame_id, chunk_id)
 
-    return new_frame_ids
+    return new_frame_ids, update_chunk_ids
 
 
 if __name__ == '__main__':
@@ -79,9 +81,9 @@ if __name__ == '__main__':
             socket.send(b"Nothing")
         else:
             recv_sensors = [int(x) for x in recv.split(',')]
-            old_frame_ids = process_request(recv_sensors, old_frame_ids)
-            old_frame_ids = '_'.join(str(id) for id in old_frame_ids)
-            socket.send_string(old_frame_ids)
+            old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids)
+            update_chunk_ids = '_'.join(str(id) for id in update_chunk_ids)
+            socket.send_string(update_chunk_ids)
 
     ##### Test Stuff Locally
     # recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
