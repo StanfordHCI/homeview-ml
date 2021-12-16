@@ -7,6 +7,9 @@ chunk_size = 1
 # number of frames split to train set
 n_train = 100
 
+# chunk difference vector
+vector_dims = 2
+
 # learning rate
 lr = 0.1
 

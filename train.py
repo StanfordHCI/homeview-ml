@@ -8,10 +8,10 @@ device = torch.device('cpu')
 ### Part 1: define model
 
 class Model(torch.nn.Module):
-  def __init__(self, sensors, chunks):
+  def __init__(self, sensors, chunks, vector_dims):
     super().__init__()
     self.linear = torch.nn.Sequential(
-      torch.nn.Linear(sensors, chunks),
+      torch.nn.Linear(sensors, chunks * vector_dims),
       torch.nn.ReLU(),
     )
   def forward(self, input):
@@ -93,12 +93,14 @@ if __name__ == '__main__':
                                             shuffle = False,
                                             pin_memory = True)
 
+  print(train_data[0][1].shape, train_data[1][1].shape)
   n_sensors = train_data[0][0].shape[0]
-  n_chunks = train_data[0][1].shape[0]
+  n_chunks = train_data[0][1].shape[0] / config.vector_dims
   # n_sensors = 1
   # n_chunks = 1
 
-  model = Model(n_sensors, n_chunks)
+
+  model = Model(n_sensors, n_chunks, config.vector_dims)
   model.to(device)
 
   resume = 0

@@ -1,7 +1,9 @@
 __pycache__
+.vscode
 syn/
 vh.*/
 *.pth
 *.ply
 *.zip
 debug*.py
+*_dataset.py
