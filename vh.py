@@ -16,19 +16,6 @@ def diff_cloud(cloud0, cloud1):
   dist01 = cloud0.compute_point_cloud_distance(cloud1)
   dist10 = cloud1.compute_point_cloud_distance(cloud0)
 
-  # dist01 = np.asarray(dist01, dtype = int)
-  # dist10 = np.asarray(dist10, dtype = int)
-  # points0 = np.asarray(cloud0.points)
-  # points1 = np.asarray(cloud1.points)
-  # colors0 = np.asarray(cloud0.colors)
-  # colors1 = np.asarray(cloud1.colors)
-  
-  # dist01 = np.concatenate([points0 - points1[dist01], colors0 - colors1[dist01]], axis = 1)
-  # dist01 = np.linalg.norm(dist01, axis = 1)
-  
-  # dist10 = np.concatenate([points1 - points0[dist10], colors1 - colors0[dist10]], axis = 1)
-  # dist10 = np.linalg.norm(dist10, axis = 1)
-
   distance = max(np.asarray(dist01, dtype = np.float32).max(),# + \
                  np.asarray(dist10, dtype = np.float32).max())
   return distance
@@ -71,13 +58,15 @@ def diff_cloud_by_chunk(cloud0, cloud1):
 
   distances = []
 
-  for chunk in chunks:
+  for id, chunk in enumerate(chunks):
     chunk_cloud0 = cloud0.crop(chunk)
     chunk_cloud1 = cloud1.crop(chunk)
+    print('chunk %d/267, %d - %d points' %
+      (id, np.asarray(chunk_cloud0.points).shape[0], np.asarray(chunk_cloud1.points).shape[0]))
     if is_empty(chunk_cloud0) or is_empty(chunk_cloud1):
       distance = 2.0 * np.cbrt(chunk.volume())
     else:
-      distance = diff_cloud(chunk_cloud0, chunk_cloud1)
+      distance = diff_rgb_cloud(chunk_cloud0, chunk_cloud1)
     distances.append(distance)
 
   return torch.tensor(distances, dtype = torch.float32)
@@ -112,7 +101,7 @@ if __name__ == '__main__':
   ) for json_file in json_files]
 
   # first frame as reference
-  coords, colors = get_coords_and_colors(coord_files[:config.n_cameras], coord_files[:config.n_cameras])
+  coords, colors = get_coords_and_colors(coord_files[:config.n_cameras], color_files[:config.n_cameras])
   ref_cloud = get_cloud(coords, colors)
 
   # bounding boxes

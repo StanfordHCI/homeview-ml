@@ -76,7 +76,7 @@ sensors = eval_data[test_id - config.n_train][0] \
 # lights_idx = [11, 39, 43, 61, 74]
 # sensors[lights_idx] = 0
 print(sensors)
-sensors[2] = 1
+# sensors[2] = 1
 pred_vecs = model(sensors).detach().numpy()
 
 print(np.argmin(abs(vecs[0] - pred_vecs[0])), abs(vecs[0] - pred_vecs[0]), pred_vecs[0])
@@ -95,21 +95,21 @@ for chunk_id, (vec, pred_vec, chunk) in enumerate(zip(vecs, pred_vecs, chunks)):
   # find closest distance (most matching frame) from database
   frame_id = np.argmin(abs(vec - pred_vec))
 
-  # if frame_id not in frame_clouds:
-  #   coords, colors = get_coords_and_colors(
-  #     coord_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras],
-  #     color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
-  #   )
-  #   frame_clouds[frame_id] = get_cloud(coords, colors)
+  if frame_id not in frame_clouds:
+    coords, colors = get_coords_and_colors(
+      coord_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras],
+      color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
+    )
+    frame_clouds[frame_id] = get_cloud(coords, colors)
 
   start = time.time()
 
-  chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (frame_id, chunk_id))['arr_0']
-  chunk_cloud = open3d.geometry.PointCloud()
-  chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
-  chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
+  # chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (frame_id, chunk_id))['arr_0']
+  # chunk_cloud = open3d.geometry.PointCloud()
+  # chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
+  # chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
 
-  # chunk_cloud = frame_clouds[frame_id].crop(chunk)
+  chunk_cloud = frame_clouds[frame_id].crop(chunk)
   chunk_clouds.append(chunk_cloud)
 
   assemble_time += time.time() - start
@@ -141,7 +141,7 @@ no_ceiling = open3d.geometry.AxisAlignedBoundingBox(
 ground_truth = ground_truth.crop(no_ceiling)
 chunk_clouds = [cloud.crop(no_ceiling) for cloud in chunk_clouds]
 
-# open3d.visualization.draw_geometries([ground_truth])
+open3d.visualization.draw_geometries([ground_truth])
 
 chunk_clouds = merge_clouds(chunk_clouds)
 open3d.visualization.draw_geometries([chunk_clouds])
