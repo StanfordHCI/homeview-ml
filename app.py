@@ -39,8 +39,9 @@ def my_write_point_cloud(new_frame_id, chunk_id):
     open3d.io.write_point_cloud('%s/%d.ply' % (address_zy, chunk_id), chunk_cloud)
 
 
-def process_request(recv_sensors, old_frame_ids):
+def process_request(recv_sensors, old_frame_ids, write_ply=False):
     """
+    :param write_ply:
     :param recv_sensors: [0, 0, 0, 0, 0]
     :param old_frame_ids:
     :return:
@@ -60,7 +61,8 @@ def process_request(recv_sensors, old_frame_ids):
             print("Writing Chunk")
             print(chunk_id)
             update_chunk_ids.append(chunk_id)
-            my_write_point_cloud(new_frame_id, chunk_id)
+            if write_ply:
+                my_write_point_cloud(new_frame_id, chunk_id)
 
     return new_frame_ids, update_chunk_ids
 
@@ -71,24 +73,24 @@ if __name__ == '__main__':
     old_frame_ids = get_frame_ids(sensors)
 
     ##### Communication with Unity
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind('tcp://*:5556')
-    while True:
-        recv = socket.recv().decode('ascii')
-        time.sleep(1)
-        if recv == 'S':
-            socket.send(b"Nothing")
-        else:
-            recv_sensors = [int(x) for x in recv.split(',')]
-            old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids)
-            update_chunk_ids = '_'.join(str(id) for id in update_chunk_ids)
-            socket.send_string(update_chunk_ids)
+    # context = zmq.Context()
+    # socket = context.socket(zmq.REP)
+    # socket.bind('tcp://*:5556')
+    # while True:
+    #     recv = socket.recv().decode('ascii')
+    #     time.sleep(1)
+    #     if recv == 'S':
+    #         socket.send(b"Nothing")
+    #     else:
+    #         recv_sensors = [int(x) for x in recv.split(',')]
+    #         old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=True)
+    #         update_chunk_ids = '_'.join(str(id) for id in update_chunk_ids)
+    #         socket.send_string(update_chunk_ids)
 
     ##### Test Stuff Locally
-    # recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     # recv_sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    # process_request(recv_sensors, old_frame_ids)
+    old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=True)
 
 """ Legacy
 sensors = [sensor['state'] for sensor in json.load(open('./0.json'))]
