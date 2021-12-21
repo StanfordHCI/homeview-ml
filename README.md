@@ -28,9 +28,7 @@ python test.py [name] [eval_id]
 
 #### 1. install requirements
 
-```bash
-pip install flask flask-compress
-```
+Currently no requirements for socket-based backend.
 
 #### 2. prepare chunks
 
