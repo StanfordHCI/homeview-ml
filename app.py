@@ -8,7 +8,7 @@ import os
 import open3d
 import zmq
 import json
-
+import time
 
 # load vecs
 dataset_name = "vh.cameras"
@@ -76,27 +76,28 @@ def process_request(recv_sensors, old_frame_ids, write_ply=False):
 if __name__ == '__main__':
     # Initial Sensor States
     sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    old_frame_ids = get_frame_ids(sensors)
+    # old_frame_ids = get_frame_ids(sensors)
+    old_frame_ids = [-1] * n_chunks
 
     ##### Communication with Unity
-    # context = zmq.Context()
-    # socket = context.socket(zmq.REP)
-    # socket.bind('tcp://*:5556')
-    # while True:
-    #     recv = socket.recv().decode('ascii')
-    #     time.sleep(0.5)
-    #     if recv == 'S':
-    #         socket.send(b"Nothing")
-    #     else:
-    #         recv_sensors = [int(x) for x in recv.split(',')]
-    #         old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=True)
-    #         update_chunk_ids = '_'.join(str(id) for id in update_chunk_ids)
-    #         socket.send_string(update_chunk_ids)
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind('tcp://*:5556')
+    while True:
+        recv = socket.recv().decode('ascii')
+        time.sleep(0.5)
+        if recv == 'S':
+            socket.send(b"Nothing")
+        else:
+            recv_sensors = [int(x) for x in recv.split(',')]
+            old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=True)
+            update_chunk_ids = '_'.join(str(id) for id in update_chunk_ids)
+            socket.send_string(update_chunk_ids)
 
     ##### Test Stuff Locally
-    recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # recv_sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=False)
+    # recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # # recv_sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=False)
 
 """ Legacy
 sensors = [sensor['state'] for sensor in json.load(open('./0.json'))]
