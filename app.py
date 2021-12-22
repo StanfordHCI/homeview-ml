@@ -43,6 +43,7 @@ def get_frame_ids(sensors):
   return pred_frame_ids
 
 
+prev_vecs = [[-1, -1]] * n_chunks
 prev_frame_ids = [-1] * n_chunks
 save_directory = dataset_name + '/tmp'
 
@@ -50,8 +51,10 @@ if not os.path.exists(save_directory):
   os.makedirs(save_directory)
 
 while True:
-  sensors = socket.recv()
   # TODO: convert string/json to integer list [0, 1, 0, ..., 1]
+  sensors = socket.recv()
+  # sensors = np.random.randint(0, 2, n_sensors)
+  # sensors = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   sensors = torch.Tensor(sensors)
 
   pred_frame_ids = get_frame_ids(sensors)
@@ -61,17 +64,22 @@ while True:
     os.remove(file)
 
   update_chunk_ids = []
-  for chunk_id, (prev_frame_id, pred_frame_id) in enumerate(
-      zip(prev_frame_ids, pred_frame_ids)):
-    if pred_frame_id != prev_frame_id:
+  for chunk_id, (prev_frame_id, pred_frame_id, prev_vec, vec) in enumerate(
+    zip(prev_frame_ids, pred_frame_ids, prev_vecs, vecs)):
+
+    if pred_frame_id != prev_frame_id and np.linalg.norm(prev_vec - vec[pred_frame_id]) > config.epsilon:
+
       update_chunk_ids.append(chunk_id)
-      chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' %
-                             (pred_frame_id, chunk_id))['arr_0']
+      prev_vecs[chunk_id] = vec[pred_frame_id]
+      
+      chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (pred_frame_id, chunk_id))['arr_0']
+      
       chunk_cloud = open3d.geometry.PointCloud()
       chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
       chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
-      open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id),
-                                  chunk_cloud)
+      
+      open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id), chunk_cloud)
 
+  print(len(update_chunk_ids))
   prev_frame_ids = pred_frame_ids
   socket.send_string(json.dumps(update_chunk_ids))

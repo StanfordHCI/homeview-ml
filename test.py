@@ -69,7 +69,8 @@ model.eval()
 test_id = int(sys.argv[2])
 sensors = eval_data[test_id - config.n_train][0] \
   if test_id >= config.n_train else train_data[test_id][0]
-sensors[[2]] = 0
+sensors[:] = 0
+# sensors[0] = 0
 pred_vecs = model(sensors).detach().numpy().reshape(-1, config.vector_dims)
 
 gt_vecs = eval_data[test_id - config.n_train][1] \
@@ -90,7 +91,7 @@ for chunk_id, (vec, pred_vec, chunk) in enumerate(zip(vecs, pred_vecs, chunks)):
   # find closest distance (most matching frame) from database
   frame_id = np.argmin(np.linalg.norm(vec - pred_vec, axis = 1))
   if chunk_id == 2:
-    print(vec, pred_vec, gt_vecs[chunk_id * 2:chunk_id * 2 + 2], frame_id, vec[frame_id])
+    print(pred_vec, gt_vecs[chunk_id * 2:chunk_id * 2 + 2], frame_id, vec[frame_id])
 
   # if frame_id not in frame_clouds:
   #   coords, colors = get_coords_and_colors(
