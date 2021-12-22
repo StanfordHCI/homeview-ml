@@ -18,7 +18,7 @@ n_chunks = train_data[0][1].shape[0]
 model = Model(n_sensors, n_chunks)
 
 # load model
-ckpt = torch.load(dataset_name + '/model.pth')
+ckpt = torch.load(dataset_name + '/model-new-400-epoch.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -35,7 +35,7 @@ def my_write_point_cloud(new_frame_id, chunk_id):
     chunk_cloud = open3d.geometry.PointCloud()
     chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
     chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
-    address_zy = '/Users/zhuoyuelyu/Documents/a-Stanford/StanfordHCI/virtualhome-11/Assets/ply-common'
+    address_zy = '../augmented-home-assistant-frontend/Assets/ply-common'
     open3d.io.write_point_cloud('%s/%d.ply' % (address_zy, chunk_id), chunk_cloud)
 
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     # socket.bind('tcp://*:5556')
     # while True:
     #     recv = socket.recv().decode('ascii')
-    #     time.sleep(1)
+    #     time.sleep(0.5)
     #     if recv == 'S':
     #         socket.send(b"Nothing")
     #     else:
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     ##### Test Stuff Locally
     recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     # recv_sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=True)
+    old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=False)
 
 """ Legacy
 sensors = [sensor['state'] for sensor in json.load(open('./0.json'))]
