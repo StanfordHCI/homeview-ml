@@ -7,6 +7,9 @@ chunk_size = 1
 # number of frames split to train set
 n_train = 100
 
+# chunk difference vector
+vector_dims = 2
+
 # learning rate
 lr = 0.1
 
@@ -14,7 +17,7 @@ lr = 0.1
 min_lr = 0.0001
 
 # training epochs
-epochs = 4096
+epochs = 400
 
 # minibatch size 
 batch_size = 4
