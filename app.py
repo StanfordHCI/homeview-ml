@@ -66,10 +66,10 @@ while True:
   for chunk_id, (prev_frame_id, pred_frame_id, prev_vec, vec) in enumerate(
     zip(prev_frame_ids, pred_frame_ids, prev_vecs, vecs)):
 
-    if pred_frame_id != prev_frame_id and abs(prev_vec - vec[pred_frame_id]) < config.epsilon:
+    if pred_frame_id != prev_frame_id and abs(prev_vec - vec[pred_frame_id]) > config.epsilon:
 
       update_chunk_ids.append(chunk_id)
-      prev_vecs = vec[pred_frame_ids]
+      prev_vecs = vec[pred_frame_id]
 
       chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (pred_frame_id, chunk_id))['arr_0']
       
