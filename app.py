@@ -32,7 +32,7 @@ model.eval()
 def get_frame_ids(sensors):
     sensors = torch.tensor(sensors, dtype=torch.float32)
     pred_vecs = model(sensors).detach().numpy().reshape(-1, config.vector_dims)
-    pred_frame_ids = [int(np.argmin(abs(vec - pred_vec))) for vec, pred_vec in zip(vecs, pred_vecs)]
+    pred_frame_ids = [int(np.argmin(np.linalg.norm(vec - pred_vec, axis=1))) for vec, pred_vec in zip(vecs, pred_vecs)]
     return pred_frame_ids
 
 
@@ -76,8 +76,8 @@ def process_request(recv_sensors, old_frame_ids, write_ply=False):
 if __name__ == '__main__':
     # Initial Sensor States
     sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    # old_frame_ids = get_frame_ids(sensors)
-    old_frame_ids = [-1] * n_chunks
+    old_frame_ids = get_frame_ids(sensors)
+    # old_frame_ids = [-1] * n_chunks
 
     ##### Communication with Unity
     context = zmq.Context()
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     ##### Test Stuff Locally
     # recv_sensors = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # # recv_sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # recv_sensors = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     # old_frame_ids, update_chunk_ids = process_request(recv_sensors, old_frame_ids, write_ply=False)
 
 """ Legacy
