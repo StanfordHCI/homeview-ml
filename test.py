@@ -33,8 +33,8 @@ json_files = json_files[0:n_frames]
 train_data = torch.load(dataset_name + '/train.pth')
 eval_data = torch.load(dataset_name + '/eval.pth')
 
-# (n_chunks, n_frames) distances
 vecs = np.array([data[1].tolist() for data in train_data])
+# (n_chunks, n_frames, vector_dims) vector distances
 vecs = vecs.reshape(vecs.shape[0], -1, config.vector_dims).transpose(1, 0, 2)
 
 # bounding boxes

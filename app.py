@@ -1,28 +1,35 @@
 from train import Model
+import config
 import torch
-
-from flask import Flask
-from flask_compress import Compress
-from flask.helpers import make_response
 
 import numpy as np
 import sys
 
-import base64
+import glob
+import os
 
+import open3d
+
+import zmq
+import json
+
+context = zmq.Context()
+socket = context.socket(zmq.REP)
+socket.bind('tcp://*:5555')
 
 # load vecs
 dataset_name = 'vh.' + sys.argv[1]
 train_data = torch.load(dataset_name + '/train.pth')
 
-# (n_chunks, n_frames) distances
-vecs = np.array([data[1].tolist() for data in train_data]).transpose()
-
+vecs = np.array([data[1].tolist() for data in train_data])
+# (n_chunks, n_frames, vector_dims) vector distances
+vecs = vecs.reshape(vecs.shape[0], -1, config.vector_dims).transpose(1, 0, 2)
 
 # instantiate model
 n_sensors = train_data[0][0].shape[0]
-n_chunks = train_data[0][1].shape[0]
-model = Model(n_sensors, n_chunks)
+n_chunks = train_data[0][1].shape[0] // config.vector_dims
+model = Model(n_sensors, n_chunks, config.vector_dims)
+
 # load model
 ckpt = torch.load(dataset_name + '/.pth')
 model.load_state_dict(ckpt)
@@ -30,42 +37,41 @@ model.eval()
 
 
 def get_frame_ids(sensors):
-  pred_vecs = model(sensors).detach().numpy()
-  pred_frame_ids = [np.argmin(abs(vec - pred_vec)) \
+  pred_vecs = model(sensors).detach().numpy().reshape(-1, config.vector_dims)
+  pred_frame_ids = [int(np.argmin(np.linalg.norm(vec - pred_vec, axis = 1))) \
     for vec, pred_vec in zip(vecs, pred_vecs)]
   return pred_frame_ids
 
 
-server = Flask(__name__)
-server.config.update(
-  ENV = 'development',
-  DEBUG = True
-)
-Compress(server)
+prev_frame_ids = [-1] * n_chunks
+save_directory = dataset_name + '/tmp'
 
-def static_vars(**kwargs):
-  def decorate(func):
-    for k in kwargs:
-      setattr(func, k, kwargs[k])
-    return func
-  return decorate
+if not os.path.exists(save_directory):
+  os.makedirs(save_directory)
 
-@static_vars(prev_frame_ids = [0] * n_chunks)
-@server.route('/', methods = ['GET'])
-def getCloud():
+while True:
+  sensors = socket.recv()
+  # TODO: convert string/json to integer list [0, 1, 0, ..., 1]
+  sensors = torch.Tensor(sensors)
 
-  sensors = train_data[np.random.randint(100)][0]
   pred_frame_ids = get_frame_ids(sensors)
 
-  response = {}
-  for chunk_id, (prev_frame_id, pred_frame_id) in enumerate(zip(getCloud.prev_frame_ids, pred_frame_ids)):
+  files = glob.glob(save_directory + '/*')
+  for file in files:
+    os.remove(file)
+
+  update_chunk_ids = []
+  for chunk_id, (prev_frame_id, pred_frame_id) in enumerate(
+      zip(prev_frame_ids, pred_frame_ids)):
     if pred_frame_id != prev_frame_id:
-      chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (pred_frame_id, chunk_id))['arr_0']
-      response[chunk_id] = chunk_points.tobytes()
+      update_chunk_ids.append(chunk_id)
+      chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' %
+                             (pred_frame_id, chunk_id))['arr_0']
+      chunk_cloud = open3d.geometry.PointCloud()
+      chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
+      chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
+      open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id),
+                                  chunk_cloud)
 
-  getCloud.prev_frame_ids = pred_frame_ids
-  print(len(response.keys()) + ' chunks updated')
-
-  return response
-
-server.run(debug = True)
+  prev_frame_ids = pred_frame_ids
+  socket.send_string(json.dumps(update_chunk_ids))
