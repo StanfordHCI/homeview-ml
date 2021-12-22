@@ -9,16 +9,15 @@ device = torch.device('cpu')
 ### Part 1: define model
 
 class Model(torch.nn.Module):
-    def __init__(self, sensors, chunks):
-        super().__init__()
-        self.linear = torch.nn.Sequential(
-            torch.nn.Linear(sensors, chunks),
-            torch.nn.ReLU(),
-        )
-
-    def forward(self, input):
-        output = self.linear(input)
-        return output
+  def __init__(self, sensors, chunks, vector_dims):
+    super().__init__()
+    self.linear = torch.nn.Sequential(
+      torch.nn.Linear(sensors, chunks * vector_dims),
+      torch.nn.ReLU(),
+    )
+  def forward(self, input):
+    output = self.linear(input)
+    return output
 
 
 def collate(datas):

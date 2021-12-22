@@ -1,21 +1,27 @@
 from train import Model
+import config
 import torch
 import numpy as np
+import sys
+import glob
+import os
 import open3d
 import zmq
-import time
+import json
+
 
 # load vecs
 dataset_name = "vh.cameras"
 train_data = torch.load(dataset_name + '/train.pth')
 
-# (n_chunks, n_frames) distances
-vecs = np.array([data[1].tolist() for data in train_data]).transpose()
+vecs = np.array([data[1].tolist() for data in train_data])
+# (n_chunks, n_frames, vector_dims) vector distances
+vecs = vecs.reshape(vecs.shape[0], -1, config.vector_dims).transpose(1, 0, 2)
 
 # instantiate model
 n_sensors = train_data[0][0].shape[0]
-n_chunks = train_data[0][1].shape[0]
-model = Model(n_sensors, n_chunks)
+n_chunks = train_data[0][1].shape[0] // config.vector_dims
+model = Model(n_sensors, n_chunks, config.vector_dims)
 
 # load model
 ckpt = torch.load(dataset_name + '/model-new-400-epoch.pth')
@@ -25,7 +31,7 @@ model.eval()
 
 def get_frame_ids(sensors):
     sensors = torch.tensor(sensors, dtype=torch.float32)
-    pred_vecs = model(sensors).detach().numpy()
+    pred_vecs = model(sensors).detach().numpy().reshape(-1, config.vector_dims)
     pred_frame_ids = [int(np.argmin(abs(vec - pred_vec))) for vec, pred_vec in zip(vecs, pred_vecs)]
     return pred_frame_ids
 
