@@ -24,3 +24,6 @@ eval_freq = 4
 
 # number of epochs between saves
 save_freq = 64
+
+# threshold to decide if a chunk should be updated
+epsilon = 1e-2

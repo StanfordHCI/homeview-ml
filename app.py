@@ -1,4 +1,5 @@
 from train import Model
+import config
 import torch
 
 import numpy as np
@@ -19,7 +20,7 @@ socket.bind('tcp://*:5555')
 
 # load vecs
 dataset_name = 'vh.' + sys.argv[1]
-train_data = torch.load(dataset_name + '/train.pth')
+train_data = torch.load(dataset_name + '/long.train.pth')
 
 # (n_chunks, n_frames) distances
 vecs = np.array([data[1].tolist() for data in train_data]).transpose()
@@ -30,7 +31,7 @@ n_chunks = train_data[0][1].shape[0]
 model = Model(n_sensors, n_chunks)
 
 # load model
-ckpt = torch.load(dataset_name + '/.pth')
+ckpt = torch.load(dataset_name + '/long.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -42,6 +43,7 @@ def get_frame_ids(sensors):
   return pred_frame_ids
 
 
+prev_vecs = [-1] * n_chunks
 prev_frame_ids = [-1] * n_chunks
 save_directory = dataset_name + '/tmp'
 
@@ -51,6 +53,7 @@ if not os.path.exists(save_directory):
 while True:
   sensors = socket.recv()
   # TODO: convert string/json to integer list [0, 1, 0, ..., 1]
+  # sensors = np.random.randint(0, 2, n_sensors)
   sensors = torch.Tensor(sensors)
 
   pred_frame_ids = get_frame_ids(sensors)
@@ -60,14 +63,20 @@ while True:
     os.remove(file)
 
   update_chunk_ids = []
-  for chunk_id, (prev_frame_id, pred_frame_id) in enumerate(zip(prev_frame_ids, pred_frame_ids)):
-    if pred_frame_id != prev_frame_id:
+  for chunk_id, (prev_frame_id, pred_frame_id, prev_vec, vec) in enumerate(
+    zip(prev_frame_ids, pred_frame_ids, prev_vecs, vecs)):
+
+    if pred_frame_id != prev_frame_id and abs(prev_vec - vec[pred_frame_id]) < config.epsilon:
+
       update_chunk_ids.append(chunk_id)
+      prev_vecs = vec[pred_frame_ids]
+
       chunk_points = np.load(dataset_name + '/chunk/%d-%d.npz' % (pred_frame_id, chunk_id))['arr_0']
+      
       chunk_cloud = open3d.geometry.PointCloud()
       chunk_cloud.points = open3d.utility.Vector3dVector(chunk_points[:, :3])
       chunk_cloud.colors = open3d.utility.Vector3dVector(chunk_points[:, 3:])
       open3d.io.write_point_cloud('%s/%d.ply' % (save_directory, chunk_id), chunk_cloud)
-
+  
   prev_frame_ids = pred_frame_ids
   socket.send_string(json.dumps(update_chunk_ids))

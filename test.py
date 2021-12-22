@@ -30,8 +30,8 @@ json_files = json_files[0:n_frames]
 
 ### Step 2: process data
 
-train_data = torch.load(dataset_name + '/vec.train.pth')
-eval_data = torch.load(dataset_name + '/vec.eval.pth')
+train_data = torch.load(dataset_name + '/long.train.pth')
+eval_data = torch.load(dataset_name + '/long.eval.pth')
 
 # (n_chunks, n_frames) distances
 vecs = np.array([data[1].tolist() for data in train_data]).transpose()
@@ -58,7 +58,7 @@ n_sensors = train_data[0][0].shape[0]
 n_chunks = train_data[0][1].shape[0]
 model = Model(n_sensors, n_chunks)
 
-ckpt = torch.load(dataset_name + '/vec.pth')
+ckpt = torch.load(dataset_name + '/long.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -75,8 +75,8 @@ sensors = eval_data[test_id - config.n_train][0] \
 
 # lights_idx = [11, 39, 43, 61, 74]
 # sensors[lights_idx] = 0
+# sensors[:] = 1
 print(sensors)
-# sensors[2] = 1
 pred_vecs = model(sensors).detach().numpy()
 
 print(np.argmin(abs(vecs[0] - pred_vecs[0])), abs(vecs[0] - pred_vecs[0]), pred_vecs[0])
