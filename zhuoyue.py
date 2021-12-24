@@ -116,16 +116,6 @@
 #     demo_manual_registration()
 
 
-# Extract camera images from a specific angle
-# if __name__ == '__main__':
-#     import shutil
-#     my_src = '/Users/zhuoyuelyu/Downloads/output-425-20-cameras-png/'
-#     my_des = '/Users/zhuoyuelyu/Downloads/output-425-20-cameras-png-16/'
-#     for i in range(171):
-#         # for j in range(20):
-#             # print(i, j)
-#         shutil.copy2(my_src + str(i) + '-16-rgb.png', my_des)  # target filename is /dst/dir/file.ext
-
 
 # Exam the states of a specific IoT
 if __name__ == '__main__':
