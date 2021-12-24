@@ -28,10 +28,8 @@ dataset_name = "vh.cameras"
 
 ### Step 2: process data
 
-# train_data = torch.load(dataset_name + '/train.pth')
-# eval_data = torch.load(dataset_name + '/eval.pth')
-train_data = torch.load(dataset_name + '/train-4-sensors.pth')
-eval_data = torch.load(dataset_name + '/eval-4-sensors.pth')
+train_data = torch.load(dataset_name + '/train.pth')
+eval_data = torch.load(dataset_name + '/eval.pth')
 
 vecs = np.array([data[1].tolist() for data in train_data])
 # (n_chunks, n_frames, vector_dims) vector distances
@@ -47,8 +45,7 @@ model = Model(n_sensors, n_chunks, config.vector_dims)
 # ckpt = torch.load(dataset_name + '/model.pth')
 # ckpt = torch.load(dataset_name + '/model-new-2000-adam.pth')
 # ckpt = torch.load(dataset_name + '/model-new-1800-adam-lr-4-l2-3.pth')  # this one seems to be perfect when all dark
-# ckpt = torch.load(dataset_name + '/model-new-2000-adam-lr-4-l2-3-not-0-1.pth')
-ckpt = torch.load(dataset_name + '/model-new-4-sensors-2000-adam-lr-4-l2-3-not-0-1.pth')  # 其实和上面那个差不多...
+ckpt = torch.load(dataset_name + '/model-new-2000-adam-lr-4-l2-3-not-0-1.pth')  # this one seems to be perfect when all dark
 model.load_state_dict(ckpt)
 model.eval()
 

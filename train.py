@@ -8,16 +8,25 @@ device = torch.device('cpu')
 
 ### Part 1: define model
 
+
 class Model(torch.nn.Module):
-  def __init__(self, sensors, chunks, vector_dims):
-    super().__init__()
-    self.linear = torch.nn.Sequential(
-      torch.nn.Linear(sensors, chunks * vector_dims),
-      torch.nn.ReLU(),
-    )
-  def forward(self, input):
-    output = self.linear(input)
-    return output
+    # def __init__(self, sensors, chunks):
+    #     super().__init__()
+    #     self.linear = torch.nn.Sequential(
+    #         torch.nn.Linear(sensors, chunks),
+    #         torch.nn.ReLU(),
+    #     )
+
+    def __init__(self, sensors, chunks, vector_dims):
+        super().__init__()
+        self.linear = torch.nn.Sequential(
+            torch.nn.Linear(sensors, chunks * vector_dims),
+            torch.nn.ReLU(),
+        )
+
+    def forward(self, input):
+        output = self.linear(input)
+        return output
 
 
 def collate(datas):
@@ -34,8 +43,8 @@ def init_weights(m):
 
 def compute_loss(pred, gt):
     # Zhuoyue round all brightness values to 0 and 1
-    threshold = 0.5
-    gt[:, 1::2] = torch.where(gt[:, 1::2] > threshold, 1, 0)
+    # threshold = 0.5
+    # gt[:, 1::2] = torch.where(gt[:, 1::2] > threshold, 1, 0)
     # gt[:, 1::2] = torch.round(gt[:, 1::2])
     loss = torch.nn.L1Loss(reduction='mean')(pred, gt)
     return loss
@@ -58,7 +67,7 @@ def train():
         scheduler.step(loss)
 
     train_losses.append((sum(losses) / len(losses)).item())
-    print('[TRAIN] epoch {}, batch {}, loss: {:4f}'.format(epoch, batch_id + 1, sum(losses) / len(losses)))
+    # print('[TRAIN] epoch {}, batch {}, loss: {:4f}'.format(epoch, batch_id + 1, sum(losses) / len(losses)))
 
 
 def eval():
@@ -81,7 +90,9 @@ if __name__ == '__main__':
     dataset_name = "vh.cameras"
     n_threads = 0
 
+# 四个
     train_data = torch.load(dataset_name + '/train.pth')
+#     train_data = torch.load(dataset_name + '/train-6-sensors.pth')
     train_loader = torch.utils.data.DataLoader(train_data,
                                                batch_size=config.batch_size,
                                                num_workers=n_threads,
@@ -90,6 +101,7 @@ if __name__ == '__main__':
                                                pin_memory=True)
 
     eval_data = torch.load(dataset_name + '/eval.pth')
+    # eval_data = torch.load(dataset_name + '/eval-6-sensors.pth')
     eval_loader = torch.utils.data.DataLoader(eval_data,
                                               batch_size=config.batch_size,
                                               num_workers=n_threads,
@@ -98,12 +110,12 @@ if __name__ == '__main__':
                                               pin_memory=True)
 
     n_sensors = train_data[0][0].shape[0]
-    n_chunks = train_data[0][1].shape[0]
-    # n_chunks = train_data[0][1].shape[0] // config.vector_dims
+    # n_chunks = train_data[0][1].shape[0]
+    n_chunks = train_data[0][1].shape[0] // config.vector_dims
     # n_sensors = 1
     # n_chunks = 1
 
-    model = Model(n_sensors, n_chunks)
+    model = Model(n_sensors, n_chunks, config.vector_dims)
     model.to(device)
 
     resume = 0
@@ -114,7 +126,9 @@ if __name__ == '__main__':
         # pass
         model.apply(init_weights)
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=config.lr)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=config.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 

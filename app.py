@@ -76,14 +76,15 @@ def process_request(recv_sensors, old_frame_ids, write_ply=False):
 if __name__ == '__main__':
     # Initial Sensor States
     sensors = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    old_frame_ids = get_frame_ids(sensors)
-    # old_frame_ids = [-1] * n_chunks
+    # old_frame_ids = get_frame_ids(sensors)
+    old_frame_ids = [-1] * n_chunks
 
     ##### Communication with Unity
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind('tcp://*:5556')
     while True:
+        old_frame_ids = [-1] * n_chunks
         recv = socket.recv().decode('ascii')
         time.sleep(0.5)
         if recv == 'S':

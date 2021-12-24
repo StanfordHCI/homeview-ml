@@ -17,7 +17,7 @@ lr = 0.1
 min_lr = 0.0001
 
 # training epochs
-epochs = 400
+epochs = 2000
 
 # minibatch size 
 batch_size = 4
