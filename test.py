@@ -84,5 +84,7 @@ while 1:
         chunk_clouds.append(chunk_cloud)
 
     chunk_clouds = merge_clouds(chunk_clouds)
+    print(chunk_clouds)
+    print(type(chunk_clouds))
     open3d.visualization.draw_geometries([chunk_clouds])
     print("done")

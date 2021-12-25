@@ -117,24 +117,3 @@
 
 
 
-# Exam the states of a specific IoT
-if __name__ == '__main__':
-    import json
-    my_src = '/Users/zhuoyuelyu/Downloads/output-425-20-cameras-json/'
-    # for i in range(171):
-    #     f = open("{}/{}.json".format(my_src, i),)
-    #     data = json.load(f)
-    #     for entry in data:
-    #         if entry['id'] == 402:
-    #             print(entry['state'])
-    count = 0
-    for i in range(1):
-        f = open("{}/{}.json".format(my_src, i),)
-        data = json.load(f)
-        for entry in data:
-            if entry['class_name'] == 'door' or entry['class_name'] == 'light':
-                print(count)
-                print(entry['id'])
-                print()
-                count +=1
-

@@ -9,34 +9,30 @@ class ZhuoyueWindow:
         layout = gui.Vert(0, gui.Margins(0.5 * em, 0.5 * em, 0.5 * em, 0.5 * em))
 
         # Add Lights
-        collapse = gui.CollapsableVert("Lights", 0.33 * em, gui.Margins(em, 0, 0, 0))
-        switch = gui.ToggleSwitch("L1")
-        switch.set_on_clicked(self._on_switch)
-        collapse.add_child(switch)
+        self.iots = gui.CollapsableVert("IoTs", 0.33 * em, gui.Margins(em, 0, 0, 0))
+        num_lights = 5
+        self.iots.add_child(gui.Label("Lights"))
+        for i in range(num_lights):
+            self.iots.add_child(self.add_iot("L" + str(i)))
 
-        switch_2 = gui.ToggleSwitch("L2")
-        switch_2.set_on_clicked(self._on_switch)
-        collapse.add_child(switch_2)
+        num_doors = 3
+        self.iots.add_child(gui.Label("Doors"))
+        for i in range(num_doors):
+            self.iots.add_child(self.add_iot("D" + str(i)))
 
-        # Add doors
-        collapse2 = gui.CollapsableVert("Doors", 0.33 * em, gui.Margins(em, 0, 0, 0))
-        switch = gui.ToggleSwitch("D1")
-        switch.set_on_clicked(self._on_switch)
-        collapse2.add_child(switch)
-
-        switch_2 = gui.ToggleSwitch("D2")
-        switch_2.set_on_clicked(self._on_switch)
-        collapse2.add_child(switch_2)
-
-        layout.add_child(collapse)
-        layout.add_child(collapse2)
+        layout.add_child(self.iots)
         w.add_child(layout)
 
-    def _on_switch(self, is_on):
-        if is_on:
-            print("Blanche is on")
-        else:
-            print("Blanche is stupid")
+    def add_iot(self, name):
+        switch = gui.ToggleSwitch(name)
+        switch.set_on_clicked(self.on_switch)
+        return switch
+
+    def on_switch(self, is_on):
+        # get the states of all toggles
+        iot_states = [int(x.is_on) for x in self.iots.get_children() if type(x).__name__ == "ToggleSwitch"]
+        print(iot_states)
+
 
 
 def main():
