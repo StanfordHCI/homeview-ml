@@ -225,7 +225,7 @@ class AppWindow:
         self.settings.new_ibl_name = resource_path + "/" + AppWindow.DEFAULT_IBL
 
         self.window = gui.Application.instance.create_window(
-            "Open3D", width, height)
+            "Augmented Home Assistant", width, height)
         w = self.window  # to make the code more concise
 
         # 3D widget
