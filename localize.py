@@ -25,7 +25,7 @@ if __name__ == '__main__':
   # Step 2: read and process data
 
   # first frame as reference
-  coords, colors = get_coords_and_colors(coord_files[:config.n_cameras], coord_files[:config.n_cameras])
+  coords, colors = get_coords_and_colors(coord_files[:config.n_cameras], color_files[:config.n_cameras])
 
   # bounding boxes
   chunks = get_chunks(coords, config.chunk_size)

@@ -14,7 +14,7 @@ vector_dims = 2
 lr = 0.1
 
 # minimum learning rate
-min_lr = 0.0001
+min_lr = 0.000001
 
 # training epochs
 epochs = 4096

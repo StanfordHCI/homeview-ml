@@ -32,7 +32,11 @@ def init_weights(m):
 ### Part 3: loss and hyperparams
 
 def compute_loss(pred, gt):
-  loss = torch.nn.L1Loss(reduction = 'mean')(pred, gt)
+  diff = abs(pred - gt)
+  geo_loss = torch.max(diff[0::2])
+  lumin_loss = torch.mean(diff[1::2])
+  loss = geo_loss + lumin_loss
+  # loss = torch.nn.L1Loss(reduction = 'mean')(pred, gt)
   return loss
 
 
@@ -96,8 +100,6 @@ if __name__ == '__main__':
   print(train_data[0][1].shape, train_data[1][1].shape)
   n_sensors = train_data[0][0].shape[0]
   n_chunks = train_data[0][1].shape[0] // config.vector_dims
-  # n_sensors = 1
-  # n_chunks = 1
 
 
   model = Model(n_sensors, n_chunks, config.vector_dims)
@@ -111,8 +113,9 @@ if __name__ == '__main__':
     # pass
     model.apply(init_weights)
 
-  
-  optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
+  optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4, weight_decay = 1e-3)
+  # optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
+
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
   # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 

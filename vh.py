@@ -49,7 +49,7 @@ def diff_cloud_by_chunk(cloud0, cloud1, chunks):
     chunk_cloud0 = cloud0.crop(chunk)
     chunk_cloud1 = cloud1.crop(chunk)
     if is_empty(chunk_cloud0) or is_empty(chunk_cloud1):
-      distance = [2.0 * np.cbrt(chunk.volume()), 0.0]
+      distance = [2.0 * np.cbrt(chunk.volume()), -1.0]
     else:
       distance = diff_vec(chunk_cloud0, chunk_cloud1)
     distances.extend(distance)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     )
     cloud = get_cloud(coords, colors)
     # per chunk distance
-    distances = diff_cloud_by_chunk(ref_cloud, cloud)
+    distances = diff_cloud_by_chunk(ref_cloud, cloud, chunks)
     dataset.append((sensors[frame_id], distances))
 
 
