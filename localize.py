@@ -1,8 +1,8 @@
 from utils import get_cloud, get_chunks, get_coords_and_colors, get_file_lists
 import numpy as np
 import config
-import open3d
 import sys
+import os
 
 
 if __name__ == '__main__':
@@ -11,6 +11,8 @@ if __name__ == '__main__':
   dataset_name = config.dataset_prefix + '.' + sys.argv[1]
   coord_files, color_files, _, n_frames = get_file_lists(dataset_name)
 
+  if not os.path.exist(dataset_name + '/chunk'):
+    os.mkdir(dataset_name + '/chunk')
 
   ## Step 2: read and process data
 

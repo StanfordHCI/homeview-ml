@@ -1,49 +1,65 @@
-### Dataset Preparation
+Baseline method for Stanford HCI project 'Augmented Home Assistant'.
 
-Step 1. Place the generated file in directory `vh.[name]/raw/`. Make sure the frame count exceeds `[n_train]` set in config.py. Each frame should contain one frame_id.json and `[n_cameras]` of frame_id-camera_id-point_cloud.exr and `[n_cameras]` of frame_id-camera_id-rgb.png.
+This branch only supports dataset generated from the VirtualHome simualtor.
 
-Step 2. Convert to dataset. The first `[n_train]` frames are used for training and the rest for evaluation.
+### Dataset Preprocessing
 
-```bash
-python vh.py [name]
-```
-train.pth and eval.pth will be generated and saved in `vh.[name]/`.
+1. Place the generated file in directory `vh.[dataset_name]/raw/`. Make sure the number of frames exceeds `[n_train]` as described in `config.py`. Each frame consists of exactly one `frame_id.json` and `[n_cameras]` of exr and png images respectively, formatted as `frame_id-camera_id-point_cloud.exr` and `frame_id-camera_id-rgb.png`.
+
+2. Convert the image and json files to pytorch dataset. The first `[n_train]` frames are used for training and the rest for evaluation.
+
+   ```
+   python preprocess.py [dataset_name]
+   ```
+
+   `train.pth` and `eval.pth` will be generated and saved in `vh.[dataset_name]/`.
 
 
 ### Train
 
-```bash
-python train.py [name]
 ```
+python train.py [dataset_name]
+```
+
+During and after the training process, `model.pth` will be saved as checkpoint.
 
 ### Test
 
 Specify the frame id `[eval_id]` for evaluation.
 
-```bash
-python test.py [name] [eval_id]
+```
+python test.py [dataset_name] [eval_id]
 ```
 
-### Demo-Backend
+### Backend
 
-#### 1. install requirements
+1. prepare chunks
 
-```bash
-pip install flask flask-compress
-```
+   To avoid frequently decoding images on-the-fly, we precompute chunks of all frames and store it in `vh.[dataset_name]/chunk`, in the compressed npz format. Simply run
 
-#### 2. prepare chunks
+   ```
+   python localize.py [dataset_name]
+   ```
+   
+   100 frames will take 3GB of space approximately.
+   
+2. run backend
 
-prepare locally
+   ```
+   python app.py [dataset_name]
+   ```
 
-```bash
-python localize.py [name]
-```
+### Other implemented functionalities
 
-or download the chunks [here](https://drive.google.com/file/d/1JvMEulAknZuQVcUlbhd0XsEzAod1uodK/view?usp=sharing), then extract it to `vh.[name]/chunks`.
+1. locating IoT sensors
 
-#### 3. run backend
+   ```
+   python locate.py [dataset_name]
+   ```
 
-```bash
-python app.py [name]
-```
+2. objective performance comparison
+
+   ```
+   python stat.py [dataset_name]
+   ```
+
