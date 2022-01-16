@@ -5,13 +5,16 @@ import sys
 device = torch.device('cpu')
 
 
-### Part 1: define model
-
+''' IMPORTANT:
+  The model maps sensors to chunk features as
+  [sensor_0, sensor_1, ...] => [chunk_0_feature_dim_0, chunk_0_feature_dim_1, ... chunk_1_feature_dim_0, chunk_1_feature_dim_1, ...]
+'''
 class Model(torch.nn.Module):
-  def __init__(self, sensors, chunks, vector_dims):
+  def __init__(self, sensors, chunks, feature_dims):
     super().__init__()
     self.linear = torch.nn.Sequential(
-      torch.nn.Linear(sensors, chunks * vector_dims),
+      torch.nn.Linear(sensors, chunks * feature_dims),
+      ## the activation layer is not necessarily required for one layer mapping
       torch.nn.ReLU(),
     )
   def forward(self, input):
@@ -29,18 +32,21 @@ def init_weights(m):
     torch.nn.init.uniform_(m.bias)
 
 
-### Part 3: loss and hyperparams
-
 def compute_loss(pred, gt):
   diff = abs(pred - gt)
-  geo_loss = torch.max(diff[0::2])
-  lumin_loss = torch.mean(diff[1::2])
+  ''' 
+    Illuminance changes are much more common in a chunk than geometry,
+    and thus, for reduction, we use mean for illuminance and max for geometry,
+    encouraging the network to consistently pay attention to illuminance prediction,
+    while also keep an eye on special geometry changes.
+  '''
+  geo_loss = torch.max(diff[0::config.feature_dims])
+  lumin_loss = torch.mean(diff[config.feature_dims//2::config.feature_dims])
   loss = geo_loss + lumin_loss
+  ## the old way treats geometry and illuminance equally
   # loss = torch.nn.L1Loss(reduction = 'mean')(pred, gt)
   return loss
 
-
-### Part 4: training and evaluation
 
 def train():
 
@@ -76,9 +82,7 @@ def eval():
 
 if __name__ == '__main__':
 
-  ### Part 2: read data
-
-  dataset_name = 'vh.' + sys.argv[1]
+  dataset_name = config.dataset_prefix + '.' + sys.argv[1]
   n_threads = 0
 
   train_data = torch.load(dataset_name + '/train.pth')
@@ -97,21 +101,11 @@ if __name__ == '__main__':
                                             shuffle = False,
                                             pin_memory = True)
 
-  print(train_data[0][1].shape, train_data[1][1].shape)
   n_sensors = train_data[0][0].shape[0]
-  n_chunks = train_data[0][1].shape[0] // config.vector_dims
+  n_chunks = train_data[0][1].shape[0] // config.feature_dims
 
-
-  model = Model(n_sensors, n_chunks, config.vector_dims)
+  model = Model(n_sensors, n_chunks, config.feature_dims)
   model.to(device)
-
-  resume = 0
-  if resume:
-    ckpt = torch.load(dataset_name + '/.pth')
-    model.load_state_dict(ckpt)
-  else:
-    # pass
-    model.apply(init_weights)
 
   optimizer = torch.optim.Adam(model.parameters(), lr = 1e-4, weight_decay = 1e-3)
   # optimizer = torch.optim.SGD(model.parameters(), lr = config.lr)
@@ -119,10 +113,9 @@ if __name__ == '__main__':
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, config.epochs, config.min_lr)
   # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
-
   for epoch in range(1, config.epochs + 1):
     train()
     if epoch % config.eval_freq == 0:
       eval()
       if epoch % config.save_freq == 0:
-        torch.save(model.state_dict(), dataset_name + '/.pth')
+        torch.save(model.state_dict(), dataset_name + '/model.pth')

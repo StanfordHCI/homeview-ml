@@ -1,46 +1,37 @@
-import enum
-from utils import get_cloud, get_chunks, get_coords_and_colors, fn
-from glob import glob
+from utils import get_cloud, get_chunks, get_coords_and_colors, get_file_lists
 import numpy as np
 import config
+import open3d
 import sys
 
-import open3d
 
 if __name__ == '__main__':
 
-  # Step 1: get data file list
-
-  # if config.n_cameras exceeds 100, modify fn in utils.py
-  dataset_name = 'vh.' + sys.argv[1]
-
-  coord_files = sorted(glob(dataset_name + '/raw/*.exr'), key = fn)
-  n_frames = len(coord_files) // config.n_cameras
-  assert n_frames > config.n_train
-
-  color_files = sorted(glob(dataset_name + '/raw/*.png'), key = fn)
-  assert n_frames == len(color_files) // config.n_cameras
+  ## Step 1: get file lists storing point data and sensor data
+  dataset_name = config.dataset_prefix + '.' + sys.argv[1]
+  coord_files, color_files, _, n_frames = get_file_lists(dataset_name)
 
 
-  # Step 2: read and process data
+  ## Step 2: read and process data
 
-  # first frame as reference
-  coords, colors = get_coords_and_colors(coord_files[:config.n_cameras], color_files[:config.n_cameras])
-
-  # bounding boxes
+  ## divide chunks from reference frame
+  coords, _ = get_coords_and_colors(
+    coord_files[config.ref_frame_id], 
+    color_files[config.ref_frame_id]
+  )
   chunks = get_chunks(coords, config.chunk_size)
 
-  # Step 3: crop into chunks and save
 
+  ## Step 3: crop by chunk and save compression
   for frame_id in range(config.n_train):
 
     print('frame %d/%d' % (frame_id + 1, config.n_train))
     # (n_points, 3) xyz, (n_points, 3) rgb
     coords, colors = get_coords_and_colors(
-      coord_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras],
-      color_files[frame_id * config.n_cameras:(frame_id + 1) * config.n_cameras]
+      coord_files[frame_id],
+      color_files[frame_id]
     )
-    cloud = get_cloud(coords, colors)
+    cloud = get_cloud(coords, colors / 255.0)
     for chunk_id, chunk in enumerate(chunks):
       chunk_cloud = cloud.crop(chunk)
       coords = np.asarray(chunk_cloud.points)
